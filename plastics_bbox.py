@@ -5,20 +5,21 @@ import os
 import random   
 import matplotlib.pyplot as plt
 import math
-
-
+import numpy as np
 
 os.chdir(r"D:\TOPIOS Data\data\twentyone") #Please change the directory to where your particle dataset is
 
 
-filename = "particles.h5"
-
-data = h5py.File(filename, "r")
-
-# for key in data.keys():
-#     print(key)
+#--------------------------------------------------------
+density_data = h5py.File("particlecount.h5", "r")
+width, height = np.shape(density_data['pcount'][0])
+particle_data = h5py.File("particles.h5", "r")
 
 
+px = particle_data['p_x'][()]
+py = particle_data['p_y'][()]
+px_attrs = particle_data['p_x']
+py_attrs = particle_data['p_y'].attrs.keys()
 
 
 class BoundingBox(object):
@@ -59,76 +60,91 @@ def get_bounding_box(latitude_in_degrees, longitude_in_degrees, half_side_in_mil
 
 
 #initializing    
-
-
-
 #Reformat long-lat in x-y format for image
 
-def printmap(lat,long,bbox,sample_size):
-    #Initializaing
-    px = data['p_x'].value
-    py = data['p_y'].value
-    px_attrs = data['p_x'].attrs
-    py_attrs = data['p_y'].attrs
-    extends = (float(px_attrs['min']), float(px_attrs['max']), float(py_attrs['min']), float(py_attrs['max']))
+class BoundedParticleCount:
     
-    #Timesteps
-    t= [1,2] 
+    def __init__(self,lat,long,bbox,sample_size):
+        self.lat = lat
+        self.long = long
+        self.bbox = bbox
+        self.sample_size = sample_size
+        
     
-    rlist=[]
-    for j in t:
+    def boundedBoxRandomParticles(self):
+
+        #extends = (float(px_attrs['min']), float(px_attrs['max']), float(py_attrs['min']), float(py_attrs['max']))
+        bound_box = get_bounding_box(self.lat,self.long,self.bbox)
+        #bound_box = get_bounding_box(5,64,500)
+        inside_boundingbox=[]
+        inside_boundingbox_random = []
+        randomList=[]
+        #Timesteps
+        
+        timeframe = len(density_data['pcount'])-1
+        
         arr = []
        
         for i in range(len(px)):
-            
-            arr.append([px[i][j], py[i][j]])
-    
-        bound_box = get_bounding_box(lat,long,bbox)
-        inside_boundingbox=[]
-    
-        for i in arr:
         
-            if bound_box.lat_min <= i[0] and i[0] <= bound_box.lat_max and bound_box.lon_min <= i[1] and i[1] <= bound_box.lon_max :
+            if bound_box.lat_min <= px[i,0] and px[i,0] <= bound_box.lat_max and bound_box.lon_min <= py[i,0] and py[i,0] <= bound_box.lon_max :
+                # print(px[i,0])
+                inside_boundingbox.append([px[i,0],py[i,0]])
+                arr.append(i)
+        
                 
-                inside_boundingbox.append([i[0], i[1]])
-    
-    #Random sampling
-    
-        #random.seed(9001)
-             
-        if not rlist:
+        randomList.append(random.sample(arr,round((len(inside_boundingbox)-1)*self.sample_size))) #random sampling
+       
+        for k in range(timeframe):
             
-            rlist=[]
-            for i in range(sample_size):
+            for i in randomList[0]:
+                #print(k)
+                inside_boundingbox_random.append([px[i,k],py[i,k],k])
+                        
+        return inside_boundingbox_random,randomList
+    
+    def convertParticlesToParticlesCount(self,inside_boundingbox_random):
+        
+        
+        hf = h5py.File('data_topios.h5','w')
+       
+        days_dict = {}
+        
+        for r in inside_boundingbox_random:
+            try:
+                
+                days_dict[r[2]].append([r[0],r[1]]) 
+            except KeyError:
+                 days_dict[r[2]] = [[r[0],r[1]]]   
+          
+        time = len(days_dict)
+        
+        particleCount= np.tile(np.zeros([360,720]),(time,1,1)) #Output shape (time, width, height) of zeroes matrices
+        
+        for key in days_dict:
             
-                r=random.randint(1,100)
-                if r not in rlist: rlist.append(r)
-    
-    
-        inside_boundingbox_random = []
-        inside_boundingbox_random =[inside_boundingbox[i] for i in rlist]
-    
-        df = pd.DataFrame(inside_boundingbox_random, columns=['lat', 'long'])
+            
+            x=[]
+            y=[]
+            k = days_dict[key]
+            for value in k: 
+                
+                #print(value)
+                x.append(int(round((width/360.0) * (180 + value[0])))) #lat
+                y.append(int(round((height/180.0) * (90 - value[1])))) #long
+           
+            for i,j in zip(x,y):
+                particleCount[key][i,j] += 1
+         
         
-    
+        hf.create_dataset('ParticleDensiy', data=particleCount)
         
-        # Scatterplot 1 - father heights vs son heights with darkred square markers
-        #plt.figure()
-        
-        fig, ax = plt.subplots(1, 1, figsize=(10, 8), frameon=False,facecolor="#222222")
-        ax.axis('off')
-    
-        ax.scatter(df['long'] , df['lat'],color='white')
-        fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
-        
-        ax.set_xlim([extends[0], extends[1]])
-        ax.set_ylim([extends[2], extends[3]])
-        
-        #plt.scatter(df['long'] , df['lat'])
-    
-        # Show your plot
-        plt.savefig('time'+ str(j) + '.png', dpi=200)
-        plt.show()
+        return particleCount
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -138,10 +154,10 @@ if __name__ == "__main__":
     parser.add_argument("-lat", "--latitude",  type=float, help="Enter the latitude in arc degrees")
     parser.add_argument("-long", "--longititude", type=float, help="Enter the longititude in arc degrees")
     parser.add_argument("-box", "--boundingbox", type=int, help="Enter the length of a half-side of the bounding box")
-    parser.add_argument("-size", "--samplesize", type=int, help="Enter the number of samples you want to randomly sample")
+    parser.add_argument("-size", "--samplesize", type=float, help="Enter the number of samples you want to randomly sample")
     args = parser.parse_args()
-    printmap(args.latitude,args.longititude,args.boundingbox,args.samplesize)
-    print(df.shape)
+    bpc = BoundedParticleCount(args.latitude,args.longititude,args.boundingbox,args.samplesize)
+    bboundParticles,p_idx = bpc.boundedBoxRandomParticles()
+    pcountGridMap = bpc.convertParticlesToParticlesCount(bboundParticles)
+    
 
-    
-    
