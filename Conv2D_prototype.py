@@ -16,8 +16,8 @@ import pylab as plt
 from tensorflow.keras import layers
 
 
-
-particleDensity = h5py.File(r'D:\TOPIOS Data\data\twentyone\data_topios.h5', 'r')
+#/data/LOMUQ/jssarna/data_topios.h5', 'r'
+particleDensity = h5py.File('/data/LOMUQ/jssarna/data_topios.h5', 'r')
 
 print(particleDensity.keys())
 
