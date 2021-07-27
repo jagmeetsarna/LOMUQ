@@ -49,37 +49,110 @@ for i in range(len(train)-10):
 # length = 20 # Length of the output sequences (in number of timesteps)
 # generator = TimeseriesGenerator(train_arr, train_arr, length=length, batch_size=1)
 
+inp = layers.Input(shape=(None, *x_train.shape[2:]))
+
+# We will construct 3 `ConvLSTM2D` layers with batch normalization,
+# followed by a `Conv3D` layer for the spatiotemporal outputs.
+x = layers.ConvLSTM2D(
+    filters=64,
+    kernel_size=(5, 5),
+    padding="same",
+    return_sequences=True,
+    activation="relu",
+)(inp)
+x = layers.BatchNormalization()(x)
+x = layers.ConvLSTM2D(
+    filters=64,
+    kernel_size=(3, 3),
+    padding="same",
+    return_sequences=True,
+    activation="relu",
+)(x)
+x = layers.BatchNormalization()(x)
+x = layers.ConvLSTM2D(
+    filters=64,
+    kernel_size=(1, 1),
+    padding="same",
+    return_sequences=True,
+    activation="relu",
+)(x)
+x = layers.Conv3D(
+    filters=1, kernel_size=(3, 3, 3), activation="sigmoid", padding="same"
+)(x)
+
+# Next, we will build the complete model and compile it.
+model = keras.models.Model(inp, x)
+model.compile(
+    loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam(),
+)
+
+# early_stopping = keras.callbacks.EarlyStopping(monitor="val_loss", patience=10)
+# reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=5)
+
+
+epochs = 15
+batch_size =6
+
+# Fit the model to the training data.
+model.fit(
+    x_train,
+    y_train,
+    batch_size=batch_size,
+    epochs=epochs
+)
 
 
 
-seq = Sequential()
 
-seq.add(ConvLSTM2D(filters=40, kernel_size=(5, 5),
-                   input_shape=(None,10,360,720,1), #important thing to note
-                   padding='same', return_sequences=True))
-seq.add(BatchNormalization())
 
-seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
-                   padding='same', return_sequences=True))
-seq.add(BatchNormalization())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# seq = Sequential()
+
+# seq.add(ConvLSTM2D(filters=40, kernel_size=(5, 5),
+#                    input_shape=(None,10,360,720,1), #important thing to note
+#                    padding='same', return_sequences=True))
+# seq.add(BatchNormalization())
+
+# seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
+#                    padding='same', return_sequences=True))
+# seq.add(BatchNormalization())
 
                    
-seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),padding='same', return_sequences=True))
-seq.add(BatchNormalization())
+# seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),padding='same', return_sequences=True))
+# seq.add(BatchNormalization())
 
-seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
-                   padding='same', return_sequences=True))
-seq.add(BatchNormalization())
+# seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
+#                    padding='same', return_sequences=True))
+# seq.add(BatchNormalization())
 
-seq.add(Conv3D(filters=1, kernel_size=(3, 3, 3),
-               activation='sigmoid',
-               padding='same', data_format='channels_last'))
-seq.compile(loss='binary_crossentropy', optimizer='adadelta')
+# seq.add(Conv3D(filters=1, kernel_size=(3, 3, 3),
+#                activation='sigmoid',
+#                padding='same', data_format='channels_last'))
+# seq.compile(loss='binary_crossentropy', optimizer='adadelta')
 
-seq.summary()
+# seq.summary()
 
-seq.fit(x_train,y_train,
-    batch_size=6,
-    epochs=25)
+# seq.fit(x_train,y_train,
+#     batch_size=6,
+#     epochs=25)
 
 seq.save('LOMUQ_model.h5')
