@@ -5,36 +5,40 @@ import os
 import random   
 import matplotlib.pyplot as plt
 import math
-
-
-
-os.chdir(r"D:\TOPIOS Data\data\twentyone")
-
-particleDensity = h5py.File("data_topios.h5", "r")
-
-particleDensity = particleDensit['ParticleDensiy'][()]
-
-#shape(x_train)
-x_train=[]
-y_train=[]
-for i in range(len(particleDensity)-10): #len(k)-10
-  
-
-  x_train.append(particleDensity[i:i+10])
-  y_train.append(particleDensity[i+1:i+11])
-
-x_train = np.array(x_train)  
-y_train = np.array(y_train)
-
-x_arr =  np.expand_dims(x_train, axis=-1)
-y_arr =  np.expand_dims(y_train, axis=-1)
-
 from keras.models import Sequential
 from keras.layers.convolutional import Conv3D
 from keras.layers.convolutional_recurrent import ConvLSTM2D
 from keras.layers.normalization import BatchNormalization
 import numpy as np
 import pylab as plt
+
+
+
+particleDensity = h5py.File('/data/LOMUQ/jssarna/data_topios.h5', 'r')
+
+particleDensity = particleDensity['ParticleDensity'][()]
+
+#Train-Test split
+test_percent = 0.2
+
+test_point = np.round(len(particleDensity)*test_percent)
+test_ind = int(len(particleDensity) - test_point)
+
+train = particleDensity[:test_ind]
+test = particleDensity[test_ind:]
+
+train = np.array(train)  
+test = np.array(test)
+
+train_arr =  np.expand_dims(train, axis=-1)
+test_arr =  np.expand_dims(train, axis=-1)
+
+
+from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
+length = 20 # Length of the output sequences (in number of timesteps)
+generator = TimeseriesGenerator(train_arr, train_arr, length=length, batch_size=1)
+
+
 
 seq = Sequential()
 
@@ -47,8 +51,8 @@ seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
                    padding='same', return_sequences=True))
 seq.add(BatchNormalization())
 
-                   padding='same', return_sequences=True))
-seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
+                   
+seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),padding='same', return_sequences=True))
 seq.add(BatchNormalization())
 
 seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
@@ -60,6 +64,8 @@ seq.add(Conv3D(filters=1, kernel_size=(3, 3, 3),
                padding='same', data_format='channels_last'))
 seq.compile(loss='binary_crossentropy', optimizer='adadelta')
 
+seq.summary()
 
-
-seq.fit(x_arr, y_arr, batch_size=1,epochs=5, validation_split=0.05)
+seq.fit(generator,epochs=5)
+from tensorflow.keras.models import load_model
+seq.save('LOMUQ_model.h5')
