@@ -20,7 +20,7 @@ particleDensity = h5py.File('/data/LOMUQ/jssarna/data_topios.h5', 'r')
 
 print(particleDensity.keys())
 
-particleDensity = particleDensity['ParticleDensity'][()]
+particleDensity = particleDensity['ParticleDensiy'][()]
 
 #Train-Test split
 test_percent = 0.2
