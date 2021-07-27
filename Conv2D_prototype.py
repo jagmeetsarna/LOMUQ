@@ -106,7 +106,7 @@ model.fit(
 
 
 
-
+model.save('LOMUQ_model.h5')
 
 
 
@@ -158,4 +158,3 @@ model.fit(
 #     batch_size=6,
 #     epochs=25)
 
-seq.save('LOMUQ_model.h5')
