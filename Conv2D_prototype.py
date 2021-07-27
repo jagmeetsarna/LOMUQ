@@ -41,7 +41,7 @@ x_train=[]
 y_train=[]
 for i in range(len(train)-10):    
     x_train.append(train_arr[i:i+10])
-    y_train.append(train_arr[i+10])
+    y_train.append(train_arr[i+1:i+11])
 
 
 
