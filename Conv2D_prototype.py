@@ -17,11 +17,11 @@ from tensorflow.keras import layers
 
 
 
-particleDensity = h5py.File('/data/LOMUQ/jssarna/data_topios.h5', 'r')
+particleDensity = h5py.File(r'D:\TOPIOS Data\data\twentyone\data_topios.h5', 'r')
 
 print(particleDensity.keys())
 
-particleDensity = particleDensity['ParticleDensiy'][()]
+particleDensity = particleDensity['ParticleDensity'][()]
 
 #Train-Test split
 test_percent = 0.2
@@ -32,8 +32,7 @@ test_ind = int(len(particleDensity) - test_point)
 train = particleDensity[:test_ind]
 test = particleDensity[test_ind:]
 
-train = np.array(train)  
-test = np.array(test)
+
 train_arr =  np.expand_dims(train, axis=-1)
 test_arr =  np.expand_dims(test, axis=-1)
 
@@ -43,7 +42,9 @@ y_train=[]
 for i in range(len(train)-10):    
     x_train.append(train_arr[i:i+10])
     y_train.append(train_arr[i+1:i+11])
-
+    
+x_train = np.array(x_train)  
+y_train = np.array(y_train)
 
 
 # from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
