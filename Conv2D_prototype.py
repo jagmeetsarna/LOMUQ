@@ -55,7 +55,7 @@ for i in range(len(train)-10):
 seq = Sequential()
 
 seq.add(ConvLSTM2D(filters=40, kernel_size=(5, 5),
-                   input_shape=(None,360,720,1), #important thing to note
+                   input_shape=(None,10,360,720,1), #important thing to note
                    padding='same', return_sequences=True))
 seq.add(BatchNormalization())
 
