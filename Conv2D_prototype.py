@@ -33,14 +33,22 @@ test = particleDensity[test_ind:]
 
 train = np.array(train)  
 test = np.array(test)
-
 train_arr =  np.expand_dims(train, axis=-1)
-test_arr =  np.expand_dims(train, axis=-1)
+test_arr =  np.expand_dims(test, axis=-1)
 
 
-from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
-length = 20 # Length of the output sequences (in number of timesteps)
-generator = TimeseriesGenerator(train_arr, train_arr, length=length, batch_size=1)
+x_train=[]
+y_train=[]
+for i in range(len(train)-10):    
+    x_train.append(train_arr[i:i+10])
+    y_train.append(train_arr[i+10])
+
+
+
+# from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
+# length = 20 # Length of the output sequences (in number of timesteps)
+# generator = TimeseriesGenerator(train_arr, train_arr, length=length, batch_size=1)
+
 
 
 
@@ -70,6 +78,8 @@ seq.compile(loss='binary_crossentropy', optimizer='adadelta')
 
 seq.summary()
 
-seq.fit(generator,epochs=5)
+seq.fit(x_train,y_train,
+    batch_size=6,
+    epochs=25)
 
 seq.save('LOMUQ_model.h5')
