@@ -5,10 +5,12 @@ import os
 import random   
 import matplotlib.pyplot as plt
 import math
-from keras.models import Sequential
-from keras.layers.convolutional import Conv3D
-from keras.layers.convolutional_recurrent import ConvLSTM2D
-from keras.layers.normalization import BatchNormalization
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers.convolutional import Conv3D
+from tensorflow.keras.layers.convolutional_recurrent import ConvLSTM2D
+from tensorflow.keras.layers.normalization import BatchNormalization
 import numpy as np
 import pylab as plt
 
@@ -67,5 +69,5 @@ seq.compile(loss='binary_crossentropy', optimizer='adadelta')
 seq.summary()
 
 seq.fit(generator,epochs=5)
-from tensorflow.keras.models import load_model
+
 seq.save('LOMUQ_model.h5')
