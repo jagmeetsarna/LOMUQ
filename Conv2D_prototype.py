@@ -8,9 +8,9 @@ import math
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers.convolutional import Conv3D
-from tensorflow.keras.layers.convolutional_recurrent import ConvLSTM2D
-from tensorflow.keras.layers.normalization import BatchNormalization
+from keras.layers.convolutional import Conv3D
+from keras.layers.convolutional_recurrent import ConvLSTM2D
+from keras.layers.normalization import BatchNormalization
 import numpy as np
 import pylab as plt
 
