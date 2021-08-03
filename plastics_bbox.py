@@ -6,9 +6,9 @@ import random
 import matplotlib.pyplot as plt
 import math
 import numpy as np
+import imageio
 
-
-
+os.chdir(r"D:\TOPIOS Data\data\twentyone")
 
 #--------------------------------------------------------
 density_data = h5py.File("particlecount.h5", "r")
@@ -140,10 +140,12 @@ class BoundedParticleCount:
                 #print(value)
                 x.append(lat_bucket) #lat
                 y.append(long_bucket) #long
+            for i,j in zip(x,y):
+                particleCount[key][i,j] += 1
          
         
         hf.create_dataset('ParticleCount', data=particleCount)
-        
+        imageio.mimwrite('particleCount_83.gif', particleCount)
         return particleCount
 
 
