@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import math
 import numpy as np
 
-os.chdir(r"D:\TOPIOS Data\data\twentyone") #Please change the directory to where your particle dataset is
+
 
 
 #--------------------------------------------------------
@@ -16,10 +16,9 @@ width, height = np.shape(density_data['pcount'][0])
 particle_data = h5py.File("particles.h5", "r")
 
 
-px = particle_data['p_x'][()]
-py = particle_data['p_y'][()]
-px_attrs = particle_data['p_x']
-py_attrs = particle_data['p_y'].attrs.keys()
+px = particle_data['p_y'][()]
+py = particle_data['p_x'][()]
+
 
 
 class BoundingBox(object):
@@ -119,7 +118,7 @@ class BoundedParticleCount:
           
         time = len(days_dict)
         
-        particleCount= np.tile(np.zeros([360,720]),(time,1,1)) #Output shape (time, width, height) of zeroes matrices
+        particleCount= np.tile(np.zeros([width,height]),(time,1,1)) #Output shape (time, width, height) of zeroes matrices
         
         for key in days_dict:
             
@@ -127,23 +126,25 @@ class BoundedParticleCount:
             x=[]
             y=[]
             k = days_dict[key]
-            for value in k: 
+            for value in k:
                 
+                lat_bucket = value[0]+90 #Turning -lats to positive i.e range 0,180
+                lat_bucket = lat_bucket * 100 #18,000 hundredth-degree increments of latitude (i.e. -90.00, -89.99, ... 89.99, 90.00)
+                lat_bucket = int(round(lat_bucket/50)) #Increment by 0.5 for 360 rows, therefore 50. #50 is dynamic
+                
+                long_bucket = value[1]+180
+                long_bucket = long_bucket * 100
+                long_bucket = int(round(long_bucket/50))
+                
+
                 #print(value)
-                x.append(int(round((width/360.0) * (180 + value[0])))) #lat
-                y.append(int(round((height/180.0) * (90 - value[1])))) #long
-           
-            for i,j in zip(x,y):
-                particleCount[key][i,j] += 1
+                x.append(lat_bucket) #lat
+                y.append(long_bucket) #long
          
         
-        hf.create_dataset('ParticleDensiy', data=particleCount)
+        hf.create_dataset('ParticleCount', data=particleCount)
         
         return particleCount
-
-
-
-
 
 
 
