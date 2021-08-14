@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from argparse import ArgumentParser
 import h5py
 import pandas as pd
@@ -8,17 +10,25 @@ import math
 import numpy as np
 import imageio
 
-os.chdir(r"D:\TOPIOS Data\data\twentyone")
+datadir_path = 'F:\Lomuq Data'
+resultdir_path = 'D:\Lumoq Results'
+pathlist = Path(datadir_path).rglob('*.*')
 
-#--------------------------------------------------------
-density_data = h5py.File("particlecount.h5", "r")
-width, height = np.shape(density_data['pcount'][0])
-particle_data = h5py.File("particles.h5", "r")
+paths=[]
+filesDict={}
 
-
-px = particle_data['p_y'][()]
-py = particle_data['p_x'][()]
-
+for path in pathlist:
+    
+    
+    path_in_str = str(path)
+    paths = path_in_str.split('\\')
+    
+    try:
+        
+        filesDict[paths[-2]].append(paths[-1])
+    except KeyError:
+        
+        filesDict[paths[-2]] = [paths[-1]]
 
 
 class BoundingBox(object):
@@ -63,11 +73,14 @@ def get_bounding_box(latitude_in_degrees, longitude_in_degrees, half_side_in_mil
 
 class BoundedParticleCount:
     
-    def __init__(self,lat,long,bbox,sample_size):
+    def __init__(self,lat,long,bbox,sample_size,px,py,key):
         self.lat = lat
         self.long = long
         self.bbox = bbox
         self.sample_size = sample_size
+        self.px = px
+        self.py = py
+        self.key = key
         
     
     def boundedBoxRandomParticles(self):
@@ -84,11 +97,11 @@ class BoundedParticleCount:
         
         arr = []
        
-        for i in range(len(px)):
+        for i in range(len(self.px)):
         
-            if bound_box.lat_min <= px[i,0] and px[i,0] <= bound_box.lat_max and bound_box.lon_min <= py[i,0] and py[i,0] <= bound_box.lon_max :
+            if bound_box.lat_min <= self.px[i,0] and self.px[i,0] <= bound_box.lat_max and bound_box.lon_min <= self.py[i,0] and self.py[i,0] <= bound_box.lon_max :
                 # print(px[i,0])
-                inside_boundingbox.append([px[i,0],py[i,0]])
+                inside_boundingbox.append([self.px[i,0],self.py[i,0]])
                 arr.append(i)
         
                 
@@ -98,14 +111,14 @@ class BoundedParticleCount:
             
             for i in randomList[0]:
                 #print(k)
-                inside_boundingbox_random.append([px[i,k],py[i,k],k])
+                inside_boundingbox_random.append([self.px[i,k],self.py[i,k],k])
                         
         return inside_boundingbox_random,randomList
     
     def convertParticlesToParticlesCount(self,inside_boundingbox_random):
         
         
-        hf = h5py.File('data_topios.h5','w')
+        hf = h5py.File(resultdir_path+"\\"+"data_topios"+str(self.key)+".h5",'w')
        
         days_dict = {}
         
@@ -118,7 +131,7 @@ class BoundedParticleCount:
           
         time = len(days_dict)
         
-        particleCount= np.tile(np.zeros([width,height]),(time,1,1)) #Output shape (time, width, height) of zeroes matrices
+        particleCount= np.tile(np.zeros([360,720]),(time,1,1)) #Output shape (time, width, height) of zeroes matrices
         
         for key in days_dict:
             
@@ -130,22 +143,23 @@ class BoundedParticleCount:
                 
                 lat_bucket = value[0]+90 #Turning -lats to positive i.e range 0,180
                 lat_bucket = lat_bucket * 100 #18,000 hundredth-degree increments of latitude (i.e. -90.00, -89.99, ... 89.99, 90.00)
-                lat_bucket = int(round(lat_bucket/50)) #Increment by 0.5 for 360 rows, therefore 50. #50 is dynamic
+                lat_bucket = int(round(lat_bucket/(100/resolution))) #Increment by 0.5 for 360 rows, therefore 50. #50 is dynamic
                 
                 long_bucket = value[1]+180
                 long_bucket = long_bucket * 100
-                long_bucket = int(round(long_bucket/50))
+                long_bucket = int(round(long_bucket/(100/resolution)))
                 
 
                 #print(value)
                 x.append(lat_bucket) #lat
                 y.append(long_bucket) #long
             for i,j in zip(x,y):
+                
                 particleCount[key][i,j] += 1
          
-        
+        particleCount = np.flip(particleCount,1) #Because matrix indices are different.  Flipping the rows
         hf.create_dataset('ParticleCount', data=particleCount)
-        imageio.mimwrite('particleCount_83.gif', particleCount)
+        imageio.mimwrite(resultdir_path+"\\"+"particleCount_"+str(self.key)+".gif", particleCount)
         return particleCount
 
 
@@ -159,8 +173,26 @@ if __name__ == "__main__":
     parser.add_argument("-box", "--boundingbox", type=int, help="Enter the length of a half-side of the bounding box")
     parser.add_argument("-size", "--samplesize", type=float, help="Enter the number of samples you want to randomly sample")
     args = parser.parse_args()
-    bpc = BoundedParticleCount(args.latitude,args.longititude,args.boundingbox,args.samplesize)
-    bboundParticles,p_idx = bpc.boundedBoxRandomParticles()
-    pcountGridMap = bpc.convertParticlesToParticlesCount(bboundParticles)
-    
+    for key in filesDict:
+        
+        #print(key,'-->',filesDict)
+
+        particleCountH5 = datadir_path +"\\" + key + "\\"+"particlecount.h5"
+        particlesH5 = datadir_path +"\\" + key + "\\"+"particles.h5"
+        density_data = h5py.File(particleCountH5, "r")
+        width, height = np.shape(density_data['pcount'][0])
+        particle_data = h5py.File(particlesH5, "r")
+        
+        resolution_file = pd.read_csv(datadir_path +"\\" + key + "\\"+"file.csv")
+        resolution = resolution_file[' (gres) (projected) grid resolution'][0]
+        
+        print(width,height)
+        
+        px = particle_data['p_y'][()]
+        py = particle_data['p_x'][()]
+        
+        bpc = BoundedParticleCount(args.latitude,args.longititude,args.boundingbox,args.samplesize,px,py,key)
+        bboundParticles,p_idx = bpc.boundedBoxRandomParticles()
+        pcountGridMap = bpc.convertParticlesToParticlesCount(bboundParticles)
+
 
