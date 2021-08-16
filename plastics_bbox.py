@@ -10,8 +10,8 @@ import math
 import numpy as np
 import imageio
 
-datadir_path = '/data/LOMUQ'
-resultdir_path = '/data/LOMUQ/jssarna'
+datadir_path = 'F:\Lomuq Data'
+resultdir_path = 'F:\Lumoq Results'
 pathlist = Path(datadir_path).rglob('*.*')
 
 paths=[]
@@ -30,9 +30,8 @@ for path in pathlist:
         
         filesDict[paths[-2]] = [paths[-1]]
 
-for key,value in filesDict.items():
-    if int(key)>=40:
-        print(key)
+
+
 
 
 class BoundingBox(object):
@@ -178,27 +177,32 @@ if __name__ == "__main__":
     parser.add_argument("-size", "--samplesize", type=float, help="Enter the number of samples you want to randomly sample")
     args = parser.parse_args()
     for key in filesDict:
-        if int(key)>=50:
+        try:
             
-        
-            #print(key,'-->',filesDict)
-        
-            particleCountH5 = datadir_path +"\\" + key + "\\"+"particlecount.h5"
-            particlesH5 = datadir_path +"\\" + key + "\\"+"particles.h5"
-            density_data = h5py.File(particleCountH5, "r")
-            width, height = np.shape(density_data['pcount'][0])
-            particle_data = h5py.File(particlesH5, "r")
+            if int(key)>=50:
+                
+                
             
-            resolution_file = pd.read_csv(datadir_path +"\\" + key + "\\"+"file.csv")
-            resolution = resolution_file[' (gres) (projected) grid resolution'][0]
+                #print(key,'-->',filesDict)
             
-            print(width,height,resolution)
-            
-            px = particle_data['p_y'][()]
-            py = particle_data['p_x'][()]
-            
-            bpc = BoundedParticleCount(args.latitude,args.longititude,args.boundingbox,args.samplesize,px,py,key)
-            bboundParticles,p_idx = bpc.boundedBoxRandomParticles()
-            pcountGridMap = bpc.convertParticlesToParticlesCount(bboundParticles,width,height)
+                particleCountH5 = datadir_path +"\\" + key + "\\"+"particlecount.h5"
+                particlesH5 = datadir_path +"\\" + key + "\\"+"particles.h5"
+                density_data = h5py.File(particleCountH5, "r")
+                width, height = np.shape(density_data['pcount'][0])
+                particle_data = h5py.File(particlesH5, "r")
+                
+                resolution_file = pd.read_csv(datadir_path +"\\" + key + "\\"+"file.csv")
+                resolution = resolution_file[' (gres) (projected) grid resolution'][0]
+                
+                print(width,height,resolution)
+                
+                px = particle_data['p_y'][()]
+                py = particle_data['p_x'][()]
+                
+                bpc = BoundedParticleCount(args.latitude,args.longititude,args.boundingbox,args.samplesize,px,py,key)
+                bboundParticles,p_idx = bpc.boundedBoxRandomParticles()
+                pcountGridMap = bpc.convertParticlesToParticlesCount(bboundParticles,width,height)
+        except ValueError:
+            continue
 
 
