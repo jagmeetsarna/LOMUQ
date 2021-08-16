@@ -15,49 +15,138 @@ from keras.layers.normalization import BatchNormalization
 import numpy as np
 import pylab as plt
 from tensorflow.keras import layers
+from keras.callbacks import EarlyStopping,ModelCheckpoint
+import imageio
+import os
+from pathlib import Path
+from sklearn import preprocessing
+import h5py
+from sklearn.preprocessing import StandardScaler
 
-
+dir_path = "/data/LOMUQ/jssarna"
 #/data/LOMUQ/jssarna/data_topios.h5', 'r'
-particleDensity = h5py.File('/data/LOMUQ/jssarna/data_topios.h5', 'r')
+#particleDensity = h5py.File(r'D:\TOPIOS Data\data\twentyone\data_topios.h5', 'r')
+pathlist = Path(dir_path).rglob('*.h5')
 
-print(particleDensity.keys())
+paths=[]
+filesDict={}
+particleCountList = []
+particleCountList_crop=[]
+for path in pathlist:
+    file = str(path)
+    particleCount = h5py.File(file, 'r')
+    particleCount = particleCount['ParticleCount'][()] #Every 5 days
+    particleCountList.append(particleCount)
 
-particleDensity = particleDensity['ParticleDensiy'][()]
+r,c = shape(particleCountList[0][0]) 
 
-#Train-Test split
-test_percent = 0.2
-
-test_point = np.round(len(particleDensity)*test_percent)
-test_ind = int(len(particleDensity) - test_point)
-
-train = particleDensity[:test_ind]
-test = particleDensity[test_ind:]
-
-
-train_arr =  np.expand_dims(train, axis=-1)
-test_arr =  np.expand_dims(test, axis=-1)
-
-
-x_train=[]
-y_train=[]
-for i in range(len(train)-10):    
-    x_train.append(train_arr[i:i+10])
-    y_train.append(train_arr[i+1:i+11])
+#Cropping the "action" area
+dataDict={}
+for i in range(len(particleCountList)):
     
-x_train = np.array(x_train)  
-y_train = np.array(y_train)
+    for j in range(len(particleCountList[i])):
+        
+        for rows in range(0,r-40,40):
+            
+            for columns in range(0,c-40,40):
+                
+                if(particleCountList[i][j][rows:rows+40,columns:columns+40].sum()>0):
+                    
+                    dataDict[(i,j,rows,columns)] = particleCountList[i][j][rows:rows+40,columns:columns+40].sum()
+                    
+                    
+df = pd.DataFrame(dataDict.keys())
+df.columns=['Data','day','rows','columns']
+
+minRow =  df['rows'].min()   
+maxRow = df['rows'].max()    
+minCol =  df['columns'].min()   
+maxCol = df['columns'].max() 
 
 
-# from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
-# length = 20 # Length of the output sequences (in number of timesteps)
-# generator = TimeseriesGenerator(train_arr, train_arr, length=length, batch_size=1)
+particleCountList = np.asarray(particleCountList)
+particleCountList = particleCountList[...,minRow:maxRow+40,minCol:maxCol+40]
+train = particleCountList[:6]
+test = particleCountList[-1]  
 
-inp = layers.Input(shape=(None, *x_train.shape[2:]))
+#print(particleDensity.keys())
+dataShape_train = shape(train)
+dataShape_test = shape(test)
 
-# We will construct 3 `ConvLSTM2D` layers with batch normalization,
-# followed by a `Conv3D` layer for the spatiotemporal outputs.
+
+train = np.array(train).reshape(len(train),-1)
+test = np.array(test).reshape(1,-1)
+scaler = StandardScaler()
+       
+normalized_train = scaler.fit_transform(train)
+normalized_test = scaler.transform(test)
+
+normalized_train = normalized_train.reshape(dataShape_train[0],dataShape_train[1],dataShape_train[2],dataShape_train[3])
+
+
+normalized_test = normalized_test.reshape(1,dataShape_test[0],dataShape_test[1],dataShape_test[2])
+
+
+# imageio.mimwrite('particleDensity_5_49.gif', particleCountList[0])
+
+
+#particleDensity = particleDensity['ParticleDensity'][()]
+
+def turnIntoSequence(t,length=8,overlap=3):
+    
+    x_arr=[]
+    y_arr=[]
+    for i in range(0,len(t)-length,overlap):   
+    
+        x_arr.append(t[i:i+length])
+        y_arr.append(t[i+1:i+length+1])
+        
+    return np.array(x_arr),np.array(y_arr)
+
+train_seq=[]
+test_seq=[]
+
+for i in range(len(normalized_train)): #Combining them all in a sequence form
+    
+    train_seq.append(turnIntoSequence(normalized_train[i]))
+    
+for i in range(len(normalized_test)): #Combining them all in a sequence form
+    
+    test_seq.append(turnIntoSequence(normalized_test[i]))
+    
+
+def finalPrep(t=train_seq):
+    
+    t_seq = np.array(t)
+    t_seq = t_seq.swapaxes(0, 1)
+    
+    t_seq =  np.expand_dims(t_seq, axis=-1)
+    
+    
+    X = t_seq[0]
+    y = t_seq[1]
+    
+    X_set=[]
+    y_set=[]
+    
+    for i in range(len(X)):
+        
+        X_set.extend(X[i])
+        y_set.extend(y[i])
+    
+    X = np.array(X_set)  
+    y = np.array(y_set)  
+    
+    return X,y
+
+X_train, y_train =  finalPrep(train_seq)
+X_test, y_test =  finalPrep(test_seq)
+
+inp = layers.Input(shape=(None,*X_train.shape[2:]))
+
+
 x = layers.ConvLSTM2D(
-    filters=64,
+    filters=20,
     kernel_size=(5, 5),
     padding="same",
     return_sequences=True,
@@ -65,7 +154,7 @@ x = layers.ConvLSTM2D(
 )(inp)
 x = layers.BatchNormalization()(x)
 x = layers.ConvLSTM2D(
-    filters=64,
+    filters=15,
     kernel_size=(3, 3),
     padding="same",
     return_sequences=True,
@@ -73,7 +162,7 @@ x = layers.ConvLSTM2D(
 )(x)
 x = layers.BatchNormalization()(x)
 x = layers.ConvLSTM2D(
-    filters=64,
+    filters=15,
     kernel_size=(1, 1),
     padding="same",
     return_sequences=True,
@@ -83,78 +172,32 @@ x = layers.Conv3D(
     filters=1, kernel_size=(3, 3, 3), activation="sigmoid", padding="same"
 )(x)
 
-# Next, we will build the complete model and compile it.
+
 model = keras.models.Model(inp, x)
 model.compile(
     loss=keras.losses.binary_crossentropy, optimizer=keras.optimizers.Adam(),
 )
-
+model.summary()
 # early_stopping = keras.callbacks.EarlyStopping(monitor="val_loss", patience=10)
 # reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor="val_loss", patience=5)
 
 
-epochs = 15
-batch_size =6
+epochs = 300
+batch_size =2
+
+Early_stopping = EarlyStopping(monitor='val_loss',patience=10)
+
+modelCheckpoint = ModelCheckpoint(r'/data/LOMUQ/jssarna/checkpoint.hdf5', save_best_only = True)
 
 # Fit the model to the training data.
-model.fit(
-    x_train,
+h_callback = model.fit(
+    X_train,
     y_train,
     batch_size=batch_size,
-    epochs=epochs
+    epochs=epochs,
+    validation_data=(X_test, y_test),
+    callbacks=[Early_stopping,modelCheckpoint]
+    
 )
 
-
-
-model.save('LOMUQ_model.h5')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# seq = Sequential()
-
-# seq.add(ConvLSTM2D(filters=40, kernel_size=(5, 5),
-#                    input_shape=(None,10,360,720,1), #important thing to note
-#                    padding='same', return_sequences=True))
-# seq.add(BatchNormalization())
-
-# seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
-#                    padding='same', return_sequences=True))
-# seq.add(BatchNormalization())
-
-                   
-# seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),padding='same', return_sequences=True))
-# seq.add(BatchNormalization())
-
-# seq.add(ConvLSTM2D(filters=40, kernel_size=(3, 3),
-#                    padding='same', return_sequences=True))
-# seq.add(BatchNormalization())
-
-# seq.add(Conv3D(filters=1, kernel_size=(3, 3, 3),
-#                activation='sigmoid',
-#                padding='same', data_format='channels_last'))
-# seq.compile(loss='binary_crossentropy', optimizer='adadelta')
-
-# seq.summary()
-
-# seq.fit(x_train,y_train,
-#     batch_size=6,
-#     epochs=25)
-
+model.save("/data/LOMUQ/jssarna/BestModel.hdf5")
