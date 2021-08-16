@@ -10,8 +10,8 @@ import math
 import numpy as np
 import imageio
 
-datadir_path = 'F:\Lomuq Data'
-resultdir_path = 'F:\Lumoq Results'
+datadir_path = '/data/LOMUQ'
+resultdir_path = '/data/LOMUQ/jssarna'
 pathlist = Path(datadir_path).rglob('*.*')
 
 paths=[]
@@ -181,8 +181,6 @@ if __name__ == "__main__":
             
             if int(key)>=50:
                 
-                
-            
                 #print(key,'-->',filesDict)
             
                 particleCountH5 = datadir_path +"\\" + key + "\\"+"particlecount.h5"
