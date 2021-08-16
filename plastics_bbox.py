@@ -21,7 +21,7 @@ for path in pathlist:
     
     
     path_in_str = str(path)
-    paths = path_in_str.split('\\')
+    paths = path_in_str.split('/')
     
     try:
         
@@ -121,7 +121,7 @@ class BoundedParticleCount:
     def convertParticlesToParticlesCount(self,inside_boundingbox_random,width,height):
         
         
-        hf = h5py.File(resultdir_path+"\\"+"data_topios"+str(self.key)+".h5",'w')
+        hf = h5py.File(resultdir_path+"/"+"data_topios"+str(self.key)+".h5",'w')
        
         days_dict = {}
         
@@ -162,7 +162,7 @@ class BoundedParticleCount:
          
         particleCount = np.flip(particleCount,1) #Because matrix indices are different.  Flipping the rows
         hf.create_dataset('ParticleCount', data=particleCount)
-        imageio.mimwrite(resultdir_path+"\\"+"particleCount_"+str(self.key)+".gif", particleCount)
+        imageio.mimwrite(resultdir_path+"/"+"particleCount_"+str(self.key)+".gif", particleCount)
         return particleCount
 
 
@@ -183,13 +183,13 @@ if __name__ == "__main__":
                 
                 #print(key,'-->',filesDict)
             
-                particleCountH5 = datadir_path +"\\" + key + "\\"+"particlecount.h5"
-                particlesH5 = datadir_path +"\\" + key + "\\"+"particles.h5"
+                particleCountH5 = datadir_path +"/" + key + "/"+"particlecount.h5"
+                particlesH5 = datadir_path +"/" + key + "/"+"particles.h5"
                 density_data = h5py.File(particleCountH5, "r")
                 width, height = np.shape(density_data['pcount'][0])
                 particle_data = h5py.File(particlesH5, "r")
                 
-                resolution_file = pd.read_csv(datadir_path +"\\" + key + "\\"+"file.csv")
+                resolution_file = pd.read_csv(datadir_path +"/" + key + "/"+"file.csv")
                 resolution = resolution_file[' (gres) (projected) grid resolution'][0]
                 
                 print(width,height,resolution)
