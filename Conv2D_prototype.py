@@ -36,7 +36,9 @@ for path in pathlist:
     file = str(path)
     particleCount = h5py.File(file, 'r')
     particleCount = particleCount['ParticleCount'][()] #Every 5 days
-    particleCountList.append(particleCount)
+    if len(particleCountList)<8:
+        
+        particleCountList.append(particleCount)
 
 r,c = shape(particleCountList[0][0]) 
 
@@ -92,7 +94,7 @@ normalized_test = normalized_test.reshape(1,dataShape_test[0],dataShape_test[1],
 
 #particleDensity = particleDensity['ParticleDensity'][()]
 
-def turnIntoSequence(t,length=8,overlap=2):
+def turnIntoSequence(t,length=10,overlap=2):
     
     x_arr=[]
     y_arr=[]
