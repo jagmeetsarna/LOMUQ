@@ -12,6 +12,8 @@ import imageio
 
 datadir_path = '/data/LOMUQ'
 resultdir_path = '/data/LOMUQ/jssarna'
+# datadir_path = 'F:\Lomuq Data'
+# resultdir_path = 'F:\Lumoq Results'
 pathlist = Path(datadir_path).rglob('*.*')
 
 paths=[]
@@ -134,7 +136,7 @@ class BoundedParticleCount:
           
         time = len(days_dict)
         
-        particleCount= np.tile(np.zeros([width,height]),(time,1,1)) #Output shape (time, width, height) of zeroes matrices
+        particleCount= np.tile(np.zeros([360,720]),(time,1,1)) #Output shape (time, width, height) of zeroes matrices
         
         for key in days_dict:
             
