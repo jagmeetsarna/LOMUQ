@@ -13,7 +13,7 @@ from keras.layers.convolutional import Conv3D
 from keras.layers.convolutional_recurrent import ConvLSTM2D
 from keras.layers.normalization import BatchNormalization
 import numpy as np
-import pylab as plt
+
 from tensorflow.keras import layers
 from keras.callbacks import EarlyStopping,ModelCheckpoint
 import imageio
@@ -92,7 +92,7 @@ normalized_test = normalized_test.reshape(1,dataShape_test[0],dataShape_test[1],
 
 #particleDensity = particleDensity['ParticleDensity'][()]
 
-def turnIntoSequence(t,length=8,overlap=3):
+def turnIntoSequence(t,length=8,overlap=2):
     
     x_arr=[]
     y_arr=[]
