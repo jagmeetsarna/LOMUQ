@@ -15,7 +15,6 @@ resultdir_path = '/data/LOMUQ/jssarna'
 # datadir_path = 'F:\Lomuq Data'
 # resultdir_path = 'F:\Lumoq Results'
 pathlist = Path(datadir_path).rglob('*.*')
-
 paths=[]
 filesDict={}
 
@@ -98,7 +97,7 @@ class BoundedParticleCount:
         randomList=[]
         #Timesteps
         
-        timeframe = len(density_data['pcount'])-1
+        timeframe = len(hydrodynamic_U_data['uo'])
         
         arr = []
        
@@ -123,13 +122,12 @@ class BoundedParticleCount:
     def convertParticlesToParticlesCount(self,inside_boundingbox_random,width,height):
         
         
-        hf = h5py.File(resultdir_path+"/"+"data_topios"+str(self.key)+".h5",'w')
+        # hf = h5py.File(resultdir_path+"/"+"data_topios"+str(self.key)+".h5",'w')
        
         days_dict = {}
         
         for r in inside_boundingbox_random:
             try:
-                
                 days_dict[r[2]].append([r[0],r[1]]) 
             except KeyError:
                  days_dict[r[2]] = [[r[0],r[1]]]   
@@ -148,11 +146,11 @@ class BoundedParticleCount:
                 
                 lat_bucket = value[0]+90 #Turning -lats to positive i.e range 0,180
                 lat_bucket = lat_bucket * 100 #18,000 hundredth-degree increments of latitude (i.e. -90.00, -89.99, ... 89.99, 90.00)
-                lat_bucket = int(round(lat_bucket/(100/resolution))) #Increment by 0.5 for 360 rows, therefore 50. #50 is dynamic
+                lat_bucket = int(round(lat_bucket/(100/2))) #Increment by 0.5 for 360 rows, therefore 50. #50 is dynamic
                 
                 long_bucket = value[1]+180
                 long_bucket = long_bucket * 100
-                long_bucket = int(round(long_bucket/(100/resolution)))
+                long_bucket = int(round(long_bucket/(100/2)))
                 
 
                 #print(value)
@@ -163,7 +161,8 @@ class BoundedParticleCount:
                 particleCount[key][i,j] += 1
          
         particleCount = np.flip(particleCount,1) #Because matrix indices are different.  Flipping the rows
-        hf.create_dataset('ParticleCount', data=particleCount)
+        
+        # hf.create_dataset('ParticleCount', data=particleCount)
         imageio.mimwrite(resultdir_path+"/"+"particleCount_"+str(self.key)+".gif", particleCount)
         return particleCount
 
@@ -178,31 +177,88 @@ if __name__ == "__main__":
     parser.add_argument("-box", "--boundingbox", type=int, help="Enter the length of a half-side of the bounding box")
     parser.add_argument("-size", "--samplesize", type=float, help="Enter the number of samples you want to randomly sample")
     args = parser.parse_args()
+    particleCountList=[]
     for key in filesDict:
         try:
             
-            if int(key)>=50:
+            if int(key)>=40 and int(key)<=70:
                 
                 #print(key,'-->',filesDict)
             
-                particleCountH5 = datadir_path +"/" + key + "/"+"particlecount.h5"
-                particlesH5 = datadir_path +"/" + key + "/"+"particles.h5"
-                density_data = h5py.File(particleCountH5, "r")
-                width, height = np.shape(density_data['pcount'][0])
-                particle_data = h5py.File(particlesH5, "r")
+                hydrodynamic_U = datadir_path +"/" + key + "/"+"hydrodynamic_U.h5"
+                hydrodynamic_V = datadir_path +"/" + key + "/"+"hydrodynamic_V.h5"
+                particles = datadir_path +"/" + key + "/"+"particles.h5"
+                hydrodynamic_U_data = h5py.File(hydrodynamic_U , "r")
                 
-                resolution_file = pd.read_csv(datadir_path +"/" + key + "/"+"file.csv")
-                resolution = resolution_file[' (gres) (projected) grid resolution'][0]
+                width, height = np.shape(hydrodynamic_U_data['uo'][0])
+                particle_data = h5py.File(particles, "r")
                 
-                print(width,height,resolution)
+                print(width,height)
                 
                 px = particle_data['p_y'][()]
                 py = particle_data['p_x'][()]
                 
                 bpc = BoundedParticleCount(args.latitude,args.longititude,args.boundingbox,args.samplesize,px,py,key)
                 bboundParticles,p_idx = bpc.boundedBoxRandomParticles()
-                pcountGridMap = bpc.convertParticlesToParticlesCount(bboundParticles,width,height)
+                particleCountList.append(bpc.convertParticlesToParticlesCount(bboundParticles,width,height))
         except ValueError:
             continue
+    
+    r,c = np.shape(particleCountList[0][0])
+
+    #Cropping the "action" area
+    dataDict={}
+    for i in range(len(particleCountList)):
+        
+        for j in range(len(particleCountList[i])):
+            
+            for rows in range(0,r-40,40):
+                
+                for columns in range(0,c-40,40):
+                    
+                    if(particleCountList[i][j][rows:rows+40,columns:columns+40].sum()>0):
+                        
+                        dataDict[(i,j,rows,columns)] = particleCountList[i][j][rows:rows+40,columns:columns+40].sum()
+    
+    df = pd.DataFrame(dataDict.keys())
+    df.columns=['Data','day','rows','columns']
+
+    minRow =  df['rows'].min()   
+    maxRow =  df['rows'].max()    
+    minCol =  df['columns'].min()   
+    maxCol =  df['columns'].max() 
+    
+    particleCountList = np.asarray(particleCountList)
+    particleCountList = particleCountList[...,minRow:maxRow+40,minCol:maxCol+40]
+    
+    
+    print(minRow,maxRow,minCol,maxCol)
+    print(np.shape(particleCountList))
+    
+    hf = h5py.File(resultdir_path+"/"+"particleCountList"+".h5",'w')
+    hf.create_dataset('ParticleCount', data=particleCountList)
+    
+    particleCountList = h5py.File(resultdir_path+"/"+"particleCountList"+".h5", 'r')
+    
+    hydrodynamic_U_dataList=[]
+    hydrodynamic_V_dataList=[]
+    for key in filesDict:
+        try:
+            if int(key)>=40 and int(key)<=70:
+                hydrodynamic_U = datadir_path +"/" + key + "/"+"hydrodynamic_U.h5"
+                hydrodynamic_V = datadir_path +"/" + key + "/"+"hydrodynamic_V.h5"
+                hydrodynamic_U_data = h5py.File(hydrodynamic_U , "r")
+                hydrodynamic_V_data = h5py.File(hydrodynamic_V , "r")
+                hydrodynamic_U_dataList.append(hydrodynamic_U_data['uo'][...,minRow:maxRow+40,minCol:maxCol+40])
+                hydrodynamic_V_dataList.append(hydrodynamic_V_data['vo'][...,minRow:maxRow+40,minCol:maxCol+40])
+        except ValueError:
+            continue
+    
+    
+    hf = h5py.File(resultdir_path+"/"+"hydrodynamic_U_dataList"+".h5",'w')
+    hf.create_dataset('hydrodynamic_U', data=hydrodynamic_U_dataList)
+    
+    hf = h5py.File(resultdir_path+"/"+"hydrodynamic_V_dataList"+".h5",'w')
+    hf.create_dataset('hydrodynamic_V', data=hydrodynamic_V_dataList)
 
 
