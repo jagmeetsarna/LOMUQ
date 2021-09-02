@@ -48,7 +48,7 @@ try:
     test_X = np.sqrt((test_V**2 + test_U**2))
     test_Y = particleCountList[-1] 
     
-    if len(shape(test_Y))<= 3:
+    if len(np.shape(test_Y))<= 3:
         
         test_X = np.expand_dims(test_X,axis=0)
         test_Y = np.expand_dims(test_Y,axis=0)
