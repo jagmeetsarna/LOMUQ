@@ -20,6 +20,10 @@ from sklearn import preprocessing
 import traceback
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
+from keras.layers import Dense,Flatten,Input
+from keras.layers.merge import concatenate,add
+from keras.models import Model
+
 try:
     
     dir_path = "/data/LOMUQ/jssarna"
