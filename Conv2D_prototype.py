@@ -32,12 +32,13 @@ hydrodynamic_V_dataList = hydrodynamic_V_dataList['hydrodynamic_V'][()]
 hydrodynamic_U_dataList = hydrodynamic_U_dataList['hydrodynamic_U'][()]
 
 
-train_V = hydrodynamic_V_dataList[:8]
-train_U = hydrodynamic_U_dataList[:8]
+total = len(hydrodynamic_V_dataList)-1
+train_V = hydrodynamic_V_dataList[:total]
+train_U = hydrodynamic_U_dataList[:total]
 
 train_X = np.sqrt((train_V**2 + train_U**2))
 
-train_Y = particleCountList[:8]
+train_Y = particleCountList[:total]
 
 test_U = hydrodynamic_U_dataList[-1]  
 test_V = hydrodynamic_V_dataList[-1] 
@@ -106,7 +107,7 @@ class MonteCarloDropout(keras.layers.Dropout):
 
 
 
-samples, timesteps,rows, columns, features = shape(X1_train) 
+samples, timesteps,rows, columns, features = np.shape(X1_train) 
 
 visible1 = Input(shape=(None, rows, columns, features))
 
