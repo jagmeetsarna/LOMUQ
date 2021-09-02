@@ -21,7 +21,7 @@ import traceback
 from sklearn.preprocessing import StandardScaler
 
 try:
-    raise ValueError('A very specific bad thing happened.')
+    
     dir_path = "/data/LOMUQ/jssarna"
     #/data/LOMUQ/jssarna/data_topios.h5', 'r'
     #particleDensity = h5py.File(r'D:\TOPIOS Data\data\twentyone\data_topios.h5', 'r')
