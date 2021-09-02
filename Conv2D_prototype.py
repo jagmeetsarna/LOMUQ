@@ -19,7 +19,7 @@ from pathlib import Path
 from sklearn import preprocessing
 import traceback
 from sklearn.preprocessing import StandardScaler
-
+from sklearn.preprocessing import MinMaxScaler
 try:
     
     dir_path = "/data/LOMUQ/jssarna"
