@@ -168,7 +168,7 @@ try:
     
     model.save("/data/LOMUQ/jssarna/BestModel.hdf5")
 except:    
-    with open("exceptions.log", "a") as logfile:
+    with open("/data/LOMUQ/jssarna/exceptions.log", "a") as logfile:
         traceback.print_exc(file=logfile)
     raise
         
