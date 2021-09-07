@@ -19,20 +19,14 @@ paths=[]
 filesDict={}
 
 for path in pathlist:
-    
-    
     path_in_str = str(path)
     paths = path_in_str.split('/')
-    
     try:
         
         filesDict[paths[-2]].append(paths[-1])
     except KeyError:
         
         filesDict[paths[-2]] = [paths[-1]]
-
-
-
 
 
 class BoundingBox(object):
@@ -249,8 +243,12 @@ if __name__ == "__main__":
                 hydrodynamic_V = datadir_path +"/" + key + "/"+"hydrodynamic_V.h5"
                 hydrodynamic_U_data = h5py.File(hydrodynamic_U , "r")
                 hydrodynamic_V_data = h5py.File(hydrodynamic_V , "r")
-                hydrodynamic_U_dataList.append(hydrodynamic_U_data['uo'][...,minRow:maxRow+40,minCol:maxCol+40])
-                hydrodynamic_V_dataList.append(hydrodynamic_V_data['vo'][...,minRow:maxRow+40,minCol:maxCol+40])
+                hu = hydrodynamic_U_data['uo'][()]
+                hu = hu[:,::-1,:]
+                hv = hydrodynamic_V_data['vo'][()]
+                hv = hv[:,::-1,:]
+                hydrodynamic_U_dataList.append(hu[...,minRow:maxRow+40,minCol:maxCol+40])
+                hydrodynamic_V_dataList.append(hv[...,minRow:maxRow+40,minCol:maxCol+40])
         except ValueError:
             continue
     
