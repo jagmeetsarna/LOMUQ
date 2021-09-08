@@ -17,7 +17,7 @@ import pylab as plt
 from tensorflow.keras import layers
 from keras.callbacks import EarlyStopping,ModelCheckpoint
 import imageio
-import os
+import traceback
 from pathlib import Path
 from sklearn import preprocessing
 import h5py
@@ -76,7 +76,7 @@ try:
     
     test_Y = particleCountList[-1] 
     
-    if len(shape(test_Y))<= 3:
+    if len(np.shape(test_Y))<= 3:
         
         test_U = np.expand_dims(test_U,axis=0)
         test_V = np.expand_dims(test_V,axis=0)
@@ -132,7 +132,7 @@ try:
       def call(self, inputs):
         return super().call(inputs, training=True)
     
-    samples, timesteps,rows, columns, features = shape(X1_train) 
+    samples, timesteps,rows, columns, features = np.shape(X1_train) 
     
     visible1 = Input(shape=(None, rows, columns, features))
     
