@@ -191,7 +191,7 @@ try:
         callbacks=[Early_stopping,modelCheckpoint]
         )
     
-        model.save("/data/LOMUQ/jssarna/BestModel_sept.hdf5")
+    model.save("/data/LOMUQ/jssarna/BestModel_sept.hdf5")
 except:    
     with open("/data/LOMUQ/jssarna/exceptions1.log", "a") as logfile:
         traceback.print_exc(file=logfile)
