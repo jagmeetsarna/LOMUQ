@@ -13,7 +13,7 @@ from keras.layers.convolutional import Conv3D
 from keras.layers.convolutional_recurrent import ConvLSTM2D
 from keras.layers.normalization import BatchNormalization
 import numpy as np
-import pylab as plt
+#import pylab as plt
 from tensorflow.keras import layers
 from keras.callbacks import EarlyStopping,ModelCheckpoint
 import imageio
@@ -192,6 +192,18 @@ try:
         )
     
     model.save("/data/LOMUQ/jssarna/BestModel_sept.hdf5")
+    
+
+    plt.plot(h_callback.history['loss'])
+    plt.plot(h_callback.history['val_loss'])
+    plt.title('Loss')
+    plt.ylabel('Loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'], loc='upper left')
+    plt.savefig("/data/LOMUQ/jssarna/val_loss_plot.png",dpi=300)
+    plt.show()
+
+
 except:    
     with open("/data/LOMUQ/jssarna/exceptions1.log", "a") as logfile:
         traceback.print_exc(file=logfile)
